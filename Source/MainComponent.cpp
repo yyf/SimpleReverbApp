@@ -12,7 +12,7 @@
 #include <stdio.h>
 #include <iostream>
 #include "portaudio.h" // use portaudio 
-#include "schroeder.h" // use implementation of Schroeder reverberation using comb and all pass
+#include "schroeder.h" // use the implementation of Schroeder reverberation using comb and all pass
 
 using namespace std;
 
@@ -30,6 +30,9 @@ typedef struct {
 
 USER_DATA udata; // init user data, which will be used in the custom_callback
 
+// interface
+int init_audio(void *data, int num_in_channels, int num_out_channels, int sr);
+int close_audio();
 static int custom_callback(const void *input,
                            void *output,
                            unsigned long frameCount,
@@ -37,13 +40,12 @@ static int custom_callback(const void *input,
                            PaStreamCallbackFlags statusFlags,
                            void *userData);
 
-
+// implemnetation 
 int init_audio(void *data, int num_in_channels, int num_out_channels, int sr)
 {
     PaError err;
     err = Pa_Initialize();
-    if (err != paNoError) goto error;
-    
+    if (err != paNoError) goto error;    
     err = Pa_OpenDefaultStream(&stream, num_in_channels, num_out_channels, paFloat32, sr,
                                paFramesPerBufferUnspecified,
                                custom_callback,
@@ -73,7 +75,6 @@ error:
     return err;
 }
 
-
 static int custom_callback(const void *input,
                        void *output,
                        unsigned long frameCount,
@@ -83,13 +84,14 @@ static int custom_callback(const void *input,
 {
     int i;
     
-    float *in = (float *) input;
-    float *out = (float *) output;
+    float *in = (float *) input; // casting input to float
+    float *out = (float *) output; 
 
     USER_DATA *udata = (USER_DATA *) userData; 
     
     for (i = 0; i < frameCount; i++) {
-        double s_out = (schroeder_next(udata->s, *in) * udata->mix) + (*in++ * (1 - udata->mix)); // schroeder_next function takes a shoroeder data type and a double, and returns a double
+        double s_out = (schroeder_next(udata->s, *in) * udata->mix) + (*in++ * (1 - udata->mix)); 
+        // schroeder_next function takes a shoroeder data type and a double, and returns a double
         *out++ = s_out;
         *out++ = s_out;
     }
@@ -135,13 +137,11 @@ void MainContentComponent::paint (Graphics& g)
 
 void MainContentComponent::resized()
 {
-
+    // 
 }
-
 
 void MainContentComponent::buttonClicked (Button* button)
 {
-
     if (button == startButton){
         std::cout<< "startButton clicked" << std::endl;
         init_audio((void *) &udata, 1, 2, sr);
